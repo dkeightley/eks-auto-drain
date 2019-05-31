@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: eks-auto-drain
+    Description: Drains an EKS Worker Node when invoked by a CloudWatch event matching an Auto Scaling Group instance-terminating lifecycle action
+    Author: Derek Keightley
+    SpdxLicenseId: MIT
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    Labels: ['eks', 'asg', 'lambda', 'kubernetes']
+    HomePageUrl: https://github.com/dkeightley/eks-auto-drain
+    SemanticVersion: 0.1.0
+    SourceCodeUrl: https://github.com/dkeightley/eks-auto-drain
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.6
+      Timeout: 600
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'ec2:DescribeInstances'
+                - 'eks:DescribeCluster'
+                - 'autoscaling:CompleteLifecycleAction'
+              Resource: '*'
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: eks-auto-drain event rule
+      EventPattern: 
+        source:
+          - "aws.autoscaling"
+        detail-type:
+          - "EC2 Instance-terminate Lifecycle Action"
+      State: ENABLED
+      Targets: 
+        - 
+          Arn:
+            Fn::GetAtt:
+              - "LambdaFunction"
+              - "Arn"
+          Id: 
+            Ref: "LambdaFunction"
+
+  EventRuleSpot:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: eks-auto-drain event rule for spot instances
+      EventPattern: 
+        source:
+          - "aws.ec2"
+        detail-type:
+          - "EC2 Spot Instance Interruption Warning"
+      State: ENABLED
+      Targets: 
+        - 
+          Arn:
+            Fn::GetAtt:
+              - "LambdaFunction"
+              - "Arn"
+          Id: 
+            Ref: "LambdaFunction"
+
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "LambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      # SourceArn: 
+      #   Fn::GetAtt: 
+      #     - "EventRule"
+      #     - "Arn"
+
+Outputs:
+  LambdaRole:
+    Value: 
+      Fn::GetAtt: 
+        - "LambdaFunctionRole"
+        - "Arn"
+    Description: "Lambda IAM Role, to be added to the aws-auth ConfigMap"
