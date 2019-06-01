@@ -110,7 +110,7 @@ aws autoscaling terminate-instance-in-auto-scaling-group --no-should-decrement-d
 The Node should be cordoned, and drained of all Pods before termination. The Lambda function logs can provide output.
 
 ```bash
-sam logs --name LambdaFunction --stack-name eks-auto-drain
+sam logs --name LambdaFunction --stack-name eks-auto-drain --tail
 ```
 
 ### Local testing with the SAM CLI
@@ -129,7 +129,7 @@ aws cloudformation delete-stack --stack-name eks-auto-drain
 ```
 
 ```bash
-ASGS="group-1 group-2 group-3
+ASGS="group-1 group-2 group-3"
 for i in $ASGS
   do
     aws autoscaling delete-lifecycle-hook --lifecycle-hook-name eks-auto-drain  --auto-scaling-group-name $i
