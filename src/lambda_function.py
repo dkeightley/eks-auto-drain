@@ -14,12 +14,10 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Dry run mode if supported [boolean]
-dry_run = False
-# Optional delay before signalling completed to the ASG lifecycle [seconds]
-# The pod delete API is async so a delay allows pods to graceful stop/drain before node termination proceeds
-# This should ideally cover the maximum terminationGracePeriodSeconds (default 30s)
-delay = 30
+# Optional grace period override when deleting Pods, after which a SIGKILL is sent [seconds]. Default is 30s, or the Pod value configured
+# grace_period = 30
+# Optional delay before signalling to the ASG lifecycle [seconds]
+delay = 10
 
 region = os.environ['AWS_DEFAULT_REGION']
 cluster_state = '/tmp/cluster_name'
@@ -220,14 +218,25 @@ def remove_all_pods(api, node_name):
 
     for pod in pods.items:
         logger.info('Deleting pod {} in namespace {}'.format(pod.metadata.name, pod.metadata.namespace))
-        body = {
-            'apiVersion': 'policy/v1beta1',
-            'kind': 'Eviction',
-            'metadata': {
-                'name': pod.metadata.name,
-                'namespace': pod.metadata.namespace
+        if 'grace_period' in globals():
+            body = {
+                'apiVersion': 'policy/v1beta1',
+                'kind': 'Eviction',
+                'metadata': {
+                    'name': pod.metadata.name,
+                    'namespace': pod.metadata.namespace,
+                    'grace_period_seconds': grace_period
+                }
             }
-        }
+        else:
+            body = {
+                'apiVersion': 'policy/v1beta1',
+                'kind': 'Eviction',
+                'metadata': {
+                    'name': pod.metadata.name,
+                    'namespace': pod.metadata.namespace
+                }
+            }
         api.create_namespaced_pod_eviction(pod.metadata.name + '-eviction', pod.metadata.namespace, body)
 
 def node_exists(api, node_name):

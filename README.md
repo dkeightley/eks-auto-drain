@@ -95,12 +95,6 @@ done
 
 # Test
 
-### Local testing with the SAM CLI
-
-```bash
-sam local invoke -e misc/event.json
-```
-
 ### Testing by terminating an instance
 
 Obtain a list of instances in a Cluster:
@@ -111,6 +105,20 @@ Test by terminating an instance in an ASG
 
 ```bash
 aws autoscaling terminate-instance-in-auto-scaling-group --no-should-decrement-desired-capacity --instance-id <instance id>
+```
+
+The Node should be cordoned, and drained of all Pods before termination. The Lambda function logs can provide output.
+
+```bash
+sam logs --name LambdaFunction --stack-name eks-auto-drain
+```
+
+### Local testing with the SAM CLI
+
+The provided event.json contains an invalid instance id so will fail, however, replace with a valid instance from your cluster to ensure the drain occurs
+
+```bash
+sam local invoke -e misc/event.json
 ```
 
 ## Cleanup

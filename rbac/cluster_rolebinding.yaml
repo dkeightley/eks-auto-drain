@@ -4,7 +4,7 @@ metadata:
   name: eks-auto-drain-lambda
 subjects:
   - kind: User
-    name: lambda
+    name: eks-auto-drain-lambda
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
