@@ -4,6 +4,8 @@ Gracefully drain EKS Worker Nodes whenever a node is terminated by an Auto Scali
 
 Deployable Lambda function with CloudWatch Event Rules and an IAM Role, enabled by adding a Lifecycle hook to any Auto Scaling Group in the same AWS Region.
 
+![Overview](img/node-draining.png)
+
 ## Deploy
 
 Deployment of the Lambda, IAM Role and Cloudwatch Event Rules can be simplified with the SAM CLI and Docker.
@@ -27,7 +29,7 @@ git clone https://github.com/dkeightley/eks-auto-drain.git
 cd eks-auto-drain
 ```
 
-* Optional: set your AWS region and create an S3 bucket
+* **Optional**: set your AWS region and create an S3 bucket
 
 ```bash
 export AWS_DEFAULT_REGION=<region name>
@@ -59,7 +61,7 @@ aws cloudformation describe-stacks --stack-name eks-auto-drain --query 'Stacks[0
  ```
 
 * Add a mapping for the Role to the ClusterRole for each Cluster
-\
+
 Use an imperative action, like edit, to add to the ConfigMap to avoid merge conflicts
 
 ```bash
@@ -78,9 +80,15 @@ mapRoles: |
 
 * Add a Lifecycle hook to each Auto Scaling Group for the Nodes in each Cluster
 
+**Note:** A heart beat timeout of 300s is provided here, adjust as needed, it will serve as an overall grace period before continuing with terminating the Node
+
 Define a variable to loop through these, otherwise the below command can be used for each ASG
 
-`aws autoscaling put-lifecycle-hook --lifecycle-hook-name eks-auto-drain --lifecycle-transition "autoscaling:EC2_INSTANCE_TERMINATING" --heartbeat-timeout 300 --default-result CONTINUE --auto-scaling-group-name <auto scaling group name>`
+```bash
+aws autoscaling put-lifecycle-hook --lifecycle-hook-name eks-auto-drain --lifecycle-transition "autoscaling:EC2_INSTANCE_TERMINATING" --heartbeat-timeout 300 --default-result CONTINUE --auto-scaling-group-name <auto scaling group name>
+```
+
+**OR**
 
 ```bash
 ASGS="group-1 group-2 group-3"
