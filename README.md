@@ -130,9 +130,7 @@ aws cloudformation delete-stack --stack-name eks-auto-drain
 ```
 
 ```bash
-```bash
 ./delete-lifecycle-hook.sh asg1 asg2 asg3
-```
 ```
 
 ## TODO
