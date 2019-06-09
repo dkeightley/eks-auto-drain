@@ -43,11 +43,14 @@ def process_lifecycle(detail):
     node_name = instance_describe["Reservations"][0]["Instances"][0]["PrivateDnsName"]
     for tags in instance_describe["Reservations"][0]["Instances"][0]["Tags"]:
 
-        if tags["Key"] == 'KubernetesCluster':
-            cluster_name = tags["Value"]
+        # Obtain the cluster from the kubernetes.io/cluster tag
+        # KubernetesCluster tag is deprecated
+        if "kubernetes.io/cluster" in tags["Key"]:
+            if "owned" in tags["Value"]:
+                cluster_name = tags["Key"].split("/")[2]
         
     if cluster_name is None:
-        logger.exception('This instance doesn\'t appear to have a KubernetesCluster tag, exiting...')
+        logger.exception('This instance doesn\'t appear to have a "kubernetes.io/cluster/<cluster_name>" tag, exiting...')
         sys.exit(0)
     
     logger.info('Processing event for {} in the {} cluster'.format(node_name, cluster_name))

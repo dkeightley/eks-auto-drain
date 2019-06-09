@@ -48,19 +48,19 @@ sam deploy --template-file packaged.yaml --stack-name eks-auto-drain --capabilit
 
 To provide RBAC permissions for the drain, an RBAC group that provides the specific permissions is needed. Once added the Lambda execution role can be mapped to the group in the `aws-auth` ConfigMap for each EKS Cluster
 
-* Deploy the RBAC ClusterRole and ClusterRoleBinding for each Cluster
+#### Deploy the RBAC ClusterRole and ClusterRoleBinding for each Cluster
 
 ```bash
 kubectl apply -f rbac/
 ```
 
-* Obtain the Lambda execution Role
+#### Obtain the Lambda execution Role
 
 ```bash
 aws cloudformation describe-stacks --stack-name eks-auto-drain --query 'Stacks[0].Outputs[0].OutputValue'
  ```
 
-* Add a mapping for the Role to the ClusterRole for each Cluster
+#### Add a mapping for the Role to the ClusterRole for each Cluster
 
 Use an imperative action, like edit, to add to the ConfigMap to avoid merge conflicts
 
@@ -78,7 +78,7 @@ mapRoles: |
       username: eks-auto-drain-lambda
 ```
 
-* Add a Lifecycle hook to each Auto Scaling Group for the Nodes in each Cluster
+#### Add a Lifecycle hook to each Auto Scaling Group for the Nodes in each Cluster
 
 **Note:** A heart beat timeout of 300s is provided here, adjust as needed, it will serve as an overall grace period before continuing with terminating the Node
 
@@ -91,14 +91,7 @@ aws autoscaling put-lifecycle-hook --lifecycle-hook-name eks-auto-drain --lifecy
 **OR**
 
 ```bash
-ASGS="group-1 group-2 group-3"
-```
-
-```bash
-for i in $ASGS
-  do
-    aws autoscaling put-lifecycle-hook --lifecycle-hook-name eks-auto-drain --lifecycle-transition "autoscaling:EC2_INSTANCE_TERMINATING" --heartbeat-timeout 300 --default-result CONTINUE --auto-scaling-group-name $i
-done
+./put-lifecycle-hook.sh asg1 asg2 asg3
 ```
 
 # Test
@@ -137,11 +130,9 @@ aws cloudformation delete-stack --stack-name eks-auto-drain
 ```
 
 ```bash
-ASGS="group-1 group-2 group-3"
-for i in $ASGS
-  do
-    aws autoscaling delete-lifecycle-hook --lifecycle-hook-name eks-auto-drain  --auto-scaling-group-name $i
-done
+```bash
+./delete-lifecycle-hook.sh asg1 asg2 asg3
+```
 ```
 
 ## TODO
