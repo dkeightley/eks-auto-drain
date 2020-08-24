@@ -48,11 +48,11 @@ def process_lifecycle(detail):
         if "kubernetes.io/cluster" in tags["Key"]:
             if "owned" in tags["Value"]:
                 cluster_name = tags["Key"].split("/")[2]
-        
+
     if cluster_name is None:
         logger.exception('This instance doesn\'t appear to have a "kubernetes.io/cluster/<cluster_name>" tag, exiting...')
         sys.exit(0)
-    
+
     logger.info('Processing event for {} in the {} cluster'.format(node_name, cluster_name))
 
     # If the same cluster_name is configured ignore creating the kubeconfig
@@ -64,12 +64,12 @@ def process_lifecycle(detail):
             if search_word in contents:
                 logger.info('We are working with the same cluster, skipping the kubeconfig build')
                 same_cluster = True
-   
+
     if same_cluster is not True:
 
         if os.path.exists(cluster_state):
             os.remove(cluster_state)
-       
+
         capture_state = open(cluster_state, "w")
         capture_state.write(cluster_name)
         capture_state.close()
@@ -89,7 +89,7 @@ def process_lifecycle(detail):
     configuration.api_key['authorization'] = token
     configuration.api_key_prefix['authorization'] = 'Bearer'
 
-    # Configure the API 
+    # Configure the API
     api = client.ApiClient(configuration)
     v1 = client.CoreV1Api(api)
 
@@ -98,7 +98,7 @@ def process_lifecycle(detail):
             # Don't delay if the node already doesn't exist
             global delay
             del delay
-            complete_lifecycle(detail) 
+            complete_lifecycle(detail)
             return
 
         # Cordon the node, sleep for 2s remove all pods and complete the lifecycle
@@ -109,10 +109,10 @@ def process_lifecycle(detail):
 
     except ApiException:
         logger.exception('There was an error removing the Pods from the Node {}'.format(node_name))
-        complete_lifecycle(detail) 
+        complete_lifecycle(detail)
 
 def create_kubeconfig(cluster_name):
-        
+
     kube_content = dict()
     # Get data from EKS API
     eks_api = boto3.client('eks')
@@ -122,7 +122,7 @@ def create_kubeconfig(cluster_name):
 
     # Generating kubeconfig
     kube_content = dict()
-    
+
     kube_content['apiVersion'] = 'v1'
     kube_content['clusters'] = [
         {
@@ -132,7 +132,7 @@ def create_kubeconfig(cluster_name):
             'certificate-authority-data': certificate
             },
         'name':'kubernetes'
-                
+
         }]
 
     kube_content['contexts'] = [
@@ -150,7 +150,7 @@ def create_kubeconfig(cluster_name):
     kube_content['users'] = [
     {
     'name':'aws',
-    'user':'lambda'
+    'user': {}
     }]
 
     # Write the kubeconfig
@@ -197,7 +197,7 @@ def get_bearer_token(cluster_name):
     return 'k8s-aws-v1.' + re.sub(r'=*', '', base64_url)
 
 def cordon_node(api, node_name):
-    # Marks the specified node as unschedulable, which means that no new pods can be launched on the 
+    # Marks the specified node as unschedulable, which means that no new pods can be launched on the
     # node by the Kubernetes scheduler
     patch_body = {
         'apiVersion': 'v1',
@@ -244,7 +244,7 @@ def remove_all_pods(api, node_name):
 
 def node_exists(api, node_name):
     # Determines whether the specified node is still part of the cluster
-    nodes = api.list_node(include_uninitialized=True, pretty=True).items
+    nodes = api.list_node().items
     node = next((n for n in nodes if n.metadata.name == node_name), None)
     return False if not node else True
 
@@ -265,6 +265,6 @@ def complete_lifecycle(detail):
     )
 
 def lambda_handler(event, context):
-    
+
     detail = event["detail"]
     process_lifecycle(detail)
