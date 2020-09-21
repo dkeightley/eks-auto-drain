@@ -19,7 +19,7 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: lambda_function.lambda_handler
-      Runtime: python3.6
+      Runtime: python3.8
       Timeout: 600
       Policies:
         - Version: '2012-10-17'
