@@ -7,7 +7,6 @@ Metadata:
     Description: Drains an EKS Worker Node when invoked by a CloudWatch event matching an Auto Scaling Group instance-terminating lifecycle action
     Author: Derek Keightley
     SpdxLicenseId: MIT
-    LicenseUrl: LICENSE
     ReadmeUrl: README.md
     Labels: ['eks', 'asg', 'lambda', 'kubernetes']
     HomePageUrl: https://github.com/dkeightley/eks-auto-drain
@@ -20,7 +19,7 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: lambda_function.lambda_handler
-      Runtime: python3.6
+      Runtime: python3.8
       Timeout: 600
       Policies:
         - Version: '2012-10-17'
