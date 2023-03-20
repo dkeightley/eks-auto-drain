@@ -1,3 +1,5 @@
 .aws-sam
 packaged.yaml
 src/__pycache__/
+
+/.idea
